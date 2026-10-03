@@ -1,5 +1,5 @@
 import math
-from torch import Tensor
+import torch
 
 
 
@@ -17,7 +17,7 @@ def gaussian_weight(xy, mu, Sigma):
     #                          # (P, N)
     N = mu.shape[0]
     P = xy.shape[0]
-    result = Tensor.torch.zeros(N,P)
+    result = xy.new_zeros((P, N))
 
     for n in range(N):
         for p in range(P):
@@ -25,9 +25,9 @@ def gaussian_weight(xy, mu, Sigma):
             #* Documentation suggests using solve for numerical stability 
             #* should be equiv to A.inv() @ B
             #? https://docs.pytorch.org/docs/2.14/generated/torch.linalg.inv.html
-            solved = Tensor.torch.linalg.solve(Sigma[n], d)
+            solved = torch.linalg.solve(Sigma[n], d)
             dist_sq = d @ solved
-            result[p, n] = Tensor.torch.exp(-0.5 * dist_sq)
+            result[p, n] = torch.exp(-0.5 * dist_sq)
 
     return result
 
