@@ -1,15 +1,35 @@
-import math
+import numpy as np
 import torch
 
+H = 100
+W = 100
+N = 50
+log_s  = torch.log(0.02 * max(H, W) * torch.ones(N, 2))   # (N, 2)  small blobs, log space
+theta  = torch.zeros(N)                                   # (N,)    rotation
 
 
-#* idk if this should be in helpers
 def covariance_2d(scale, theta):
     # scale: (N, 2) positive,  theta: (N,) radians
     # TODO: build R(theta) and S = diag(scale), return Sigma = R S S^T R^T  -> (N, 2, 2)
-    R = R(theta)
-    S = diag(scale)
-    return ...
+    S = np.empty((scale.shape[0], 2, 2))
+    S[:, 0, 0] = scale[:, 0]
+    S[:, 0, 1] = 0
+    S[:, 1, 0] = 0
+    S[:, 1, 1] = scale[:, 1]
+    
+    cosVals = np.cos(theta)
+    sinVals = np.sin(theta)
+
+    R = np.empty((theta.shape[0], 2, 2))
+    R[:, 0, 0] = cosVals
+    R[:, 0, 1] = -sinVals
+    R[:, 1, 0] = sinVals
+    R[:, 1, 1] = cosVals
+
+    return R @ S @ np.matrix_transpose(S) @ np.matrix_transpose(R)
+
+
+
 
 def gaussian_weight(xy, mu, Sigma):
     # xy: (P, 2) pixel coords,  mu: (N, 2),  Sigma: (N, 2, 2)
