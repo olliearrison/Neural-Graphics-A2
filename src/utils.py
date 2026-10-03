@@ -1,5 +1,7 @@
 import numpy as np
 import torch
+from PIL import Image
+import io
 
 H = 100
 W = 100
@@ -7,6 +9,12 @@ N = 50
 log_s  = torch.log(0.02 * max(H, W) * torch.ones(N, 2))   # (N, 2)  small blobs, log space
 theta  = torch.zeros(N)                                   # (N,)    rotation
 
+def get_device():
+    if torch.cuda.is_available():
+        return "cuda"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
 
 def covariance_2d(scale, theta):
     # scale: (N, 2) positive,  theta: (N,) radians
@@ -27,8 +35,6 @@ def covariance_2d(scale, theta):
     R[:, 1, 1] = cosVals
 
     return R @ S @ np.matrix_transpose(S) @ np.matrix_transpose(R)
-
-
 
 
 def gaussian_weight(xy, mu, Sigma):
@@ -55,6 +61,25 @@ def gaussian_weight(xy, mu, Sigma):
 def pixel_grid(H, W):
     return torch.zeros((H*W, 2))
 
-#* image is a Tensor, path is where we want to save it
+#* (H, W, 3), float32, with values in [0, 1]
+def image_to_tensor(path):
+    device = get_device()
+
+    with Image.open(path) as im:
+        pixels = np.array(im.convert("RGB"), dtype=np.float32) / 255.0
+
+    return torch.from_numpy(pixels).to(device)
+
+#* (H, W, 3) to [0, 1]
 def save_image(image, path):
-    return 42
+    pixels = (
+        image.detach()
+        .clamp(0, 1)
+        .mul(255)
+        .round()
+        .to(torch.uint8)
+        .cpu()
+        .numpy()
+    )
+
+    Image.fromarray(pixels).save(path)
