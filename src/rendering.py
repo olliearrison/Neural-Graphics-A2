@@ -11,6 +11,8 @@ def render(mu, Sigma, color, opacity, order, H, W):
     T = torch.ones(H * W)
     for i in order:                           # front to back
         a = alpha[:, i]
-        # TODO: C and T compositing here
-        ...
+        C = C + T * a * color[i]
+        T = T * (1 - a)
+
+
     return C.reshape(H, W, 3)
