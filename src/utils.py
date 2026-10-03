@@ -32,17 +32,6 @@ def gaussian_weight(xy, mu, Sigma):
     return result
 
 
-
-
-
-
-    def helper(p, n):
-        xy_p = xy[p]
-        mu_n = mu[n]
-        Sigma_n = Sigma[n]
-        return math.exp(-0.5 (xy_p - mu_n)^T Sigma_n^-1 (xy_p - mu_n))
-    
-
 #* image is a Tensor, path is where we want to save it
 def save_image(image, path):
     return 42
