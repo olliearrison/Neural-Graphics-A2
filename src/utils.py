@@ -19,7 +19,7 @@ def get_device():
 def covariance_2d(scale, theta):
     # scale: (N, 2) positive,  theta: (N,) radians
     # TODO: build R(theta) and S = diag(scale), return Sigma = R S S^T R^T  -> (N, 2, 2)
-    S = np.empty((scale.shape[0], 2, 2))
+    S = torch.empty((scale.shape[0], 2, 2))
     S[:, 0, 0] = scale[:, 0]
     S[:, 0, 1] = 0
     S[:, 1, 0] = 0
@@ -28,13 +28,13 @@ def covariance_2d(scale, theta):
     cosVals = np.cos(theta)
     sinVals = np.sin(theta)
 
-    R = np.empty((theta.shape[0], 2, 2))
+    R = torch.empty((theta.shape[0], 2, 2))
     R[:, 0, 0] = cosVals
     R[:, 0, 1] = -sinVals
     R[:, 1, 0] = sinVals
     R[:, 1, 1] = cosVals
 
-    return R @ S @ np.matrix_transpose(S) @ np.matrix_transpose(R)
+    return R @ S @ S.mT @ R.mT
 
 
 def gaussian_weight(xy, mu, Sigma):
@@ -43,7 +43,7 @@ def gaussian_weight(xy, mu, Sigma):
     #                          # (P, N)
     N = mu.shape[0]
     P = xy.shape[0]
-    result = torch.new_zeros((P, N))
+    result = torch.zeros((P, N))
 
     for n in range(N):
         for p in range(P):

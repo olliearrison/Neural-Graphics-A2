@@ -4,5 +4,13 @@ from utils import *
 
 
 def main():
+    targetImg = image_to_tensor("/Users/tunger/neural_graphics/Neural-Graphics-A2/data/targets/cat.png")
+    targetImg.permute(1, 2, 0)
+    H, W = targetImg.shape[0], targetImg.shape[1]
 
-    train(N=256, W=, H=, target=)
+    print(targetImg.shape)
+
+    train(N=256, H=H, W=W, target=targetImg)
+
+    
+main()
