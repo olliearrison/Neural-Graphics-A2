@@ -37,7 +37,7 @@ def gaussian_weight(xy, mu, Sigma):
     #                          # (P, N)
     N = mu.shape[0]
     P = xy.shape[0]
-    result = xy.new_zeros((P, N))
+    result = torch.new_zeros((P, N))
 
     for n in range(N):
         for p in range(P):
@@ -51,6 +51,9 @@ def gaussian_weight(xy, mu, Sigma):
 
     return result
 
+
+def pixel_grid(H, W):
+    return torch.zeros((H*W, 2))
 
 #* image is a Tensor, path is where we want to save it
 def save_image(image, path):

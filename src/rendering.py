@@ -2,9 +2,6 @@
 import torch
 from utils import *
 
-def pixel_grid(H, W):
-    return 42
-
 def render(mu, Sigma, color, opacity, order, H, W):
     # color: (N, 3),  opacity: (N,) in [0, 1],  order: indices sorted front -> back
     xy = pixel_grid(H, W)                     # (H*W, 2)
