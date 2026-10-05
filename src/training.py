@@ -14,8 +14,6 @@ def base_config():
         'image_out': "images/Experiment_1_srgb_neural.png", #NOT YET IMPLEMENTED
     }
 
-
-
 def train(N, H, W, target):
     dev = target.device
 
@@ -42,5 +40,5 @@ def train(N, H, W, target):
         # psnr = -10 * torch.log10(loss)
         
 
-    save_image(finalImg, "/Users/tunger/neural_graphics/Neural-Graphics-A2/results/final_img.png")
+    save_image(finalImg, "/results/final_img.png")
 
