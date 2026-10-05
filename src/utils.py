@@ -82,3 +82,48 @@ def save_image(image, path):
 
     Image.fromarray(pixels).save(path)
 
+def quaternion_to_rotation(q):
+    # q: (N, 4) as (w, x, y, z)
+    # TODO: normalize q, then build R(q) above          -> (N, 3, 3)
+
+    wVals = q[:, 0]
+    xVals = q[:, 1]
+    yVals = q[:, 2]
+    zVals = q[:, 3]
+
+    topRow = torch.stack([1 - 2 * (yVals * yVals + zVals * zVals),  
+                          2 * (xVals*yVals - wVals*zVals),
+                          2 * (xVals*zVals + wVals*yVals)], -1)
+    
+    midRow = torch.stack([2 * (xVals*yVals + wVals*zVals), 
+                          1 - 2 * (xVals*xVals + zVals*zVals),
+                          2 * (yVals*zVals - wVals*xVals)], -1)
+
+    botRow = torch.stack([2 * (xVals*zVals - wVals*yVals),
+                          2 * (yVals*zVals + wVals*xVals),
+                          1 - 2 * (xVals*xVals + yVals*yVals)], -1)
+
+    return torch.stack([topRow, midRow, botRow], -2)
+    
+def covariance_3d(scale, quat):
+    # scale: (N, 3) positive,  quat: (N, 4)
+    # TODO: R = quaternion_to_rotation(quat); return R S S^T R^T  -> (N, 3, 3)
+
+    R = quaternion_to_rotation(quat)
+
+    RS = R * scale[:, None, :]
+
+    return RS @ RS.mT
+
+def project_gaussian(mu3, Sigma3, R_wc, t, K):
+    # mu3: (N, 3) world means,  Sigma3: (N, 3, 3) world covariances
+    mu_cam = mu3 @ R_wc.T + t                  # world -> camera
+    # TODO: mu2   = perspective-project mu_cam with K            (N, 2)
+    # TODO: J     = Jacobian of the projection at mu_cam         (N, 2, 3)
+    # TODO: Scam  = R_wc @ Sigma3 @ R_wc.T                       (N, 3, 3)
+    #       Sig2 = J @ Scam @ J.transpose(-1, -2)                (N, 2, 2)
+
+    
+    depth = mu_cam[:, 2]
+    return mu2, Sig2, depth
+

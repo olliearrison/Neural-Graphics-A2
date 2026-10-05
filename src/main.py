@@ -12,7 +12,7 @@ def main():
 
     targetImg.to(device=get_device())
 
-    train(N=256, H=H, W=W, target=targetImg)
+    train(N=1024, H=H, W=W, target=targetImg)
 
 
 main()

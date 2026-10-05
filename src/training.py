@@ -3,6 +3,7 @@ import numpy as np
 from utils import *
 from rendering import * 
 import math
+import time
 
 
 def base_config():
@@ -27,7 +28,9 @@ def train(N, H, W, target):
 
     opt = torch.optim.Adam([mu, log_s, theta, color, op_raw], lr=1e-2)
     finalImg = None
+    # currently taking 1.4sec per step with 1024 gaussians
     for step in range(2000):
+        start_time = time.perf_counter()
         if (step % 100 == 0): print("running epoch " + str(step))
         Sigma = covariance_2d(log_s.exp(), theta)
         # print("got sigma")
@@ -38,6 +41,9 @@ def train(N, H, W, target):
         # print("got loss")
         opt.zero_grad(); loss.backward(); opt.step()
         # psnr = -10 * torch.log10(loss)
+        end_time = time.perf_counter()
+
+        print(f"Step spent {end_time - start_time} seconds!")
         
 
     save_image(finalImg, "/results/final_img.png")
