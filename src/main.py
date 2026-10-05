@@ -10,7 +10,9 @@ def main():
 
     print(targetImg.shape)
 
+    targetImg.to(device=get_device())
+
     train(N=256, H=H, W=W, target=targetImg)
 
-    
+
 main()
