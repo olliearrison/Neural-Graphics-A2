@@ -17,7 +17,14 @@ def main():
 
     camera_json = json.load(open("data/spheres/cameras.json"))
 
-    train3d(N=8192, train_cameras=camera_json, iters=2000, dev = get_device())
+    train3d(
+        N=1024,
+        train_cameras=camera_json,
+        iters=2000,
+        dev=get_device(),
+        budget=4096,
+        do_densify=True
+    )
 
 
 main()

@@ -10,6 +10,22 @@ def composite(alpha, col):
 
     return C
 
+def render3d(mu3, log_s, quat, color, op_raw, cam, near=0.2):
+    visible = (mu3 @ cam.R.T + cam.t)[:, 2] > near
+    Sig3 = covariance_3d(log_s[visible].exp(), quat[visible])
+    mu2, Sig2, depth = project_gaussian(
+        mu3[visible], Sig3, cam.R, cam.t, cam.K
+    )
+
+    return render(
+        mu2, Sig2,
+        color[visible].sigmoid(),
+        op_raw[visible].sigmoid(),
+        torch.argsort(depth),
+        cam.H, cam.W,
+        tile=8, k_sigma=3,
+    )
+
 def render(mu, Sigma, color, opacity, order, H, W, tile, k_sigma):
     xy = pixel_grid(H, W, device=mu.device)                     # (H*W, 2)
     # w  = gaussian_weight(xy, mu, Sigma)       # (P, N)  from P1
