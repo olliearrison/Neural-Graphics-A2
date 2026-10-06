@@ -2,12 +2,22 @@ import numpy as np
 import torch
 from PIL import Image
 import io
+import random
 
 # H = 100
 # W = 100
 # N = 50
 # log_s  = torch.log(0.02 * max(H, W) * torch.ones(N, 2))   # (N, 2)  small blobs, log space
 # theta  = torch.zeros(N)                                   # (N,)    rotation
+
+class Camera:
+    def __init__(self, H, W, image, R, t, K):
+        self.H = H
+        self.W = W
+        self.image = image
+        self.R = R
+        self.t = t
+        self.K = K
 
 def get_device():
     if torch.cuda.is_available():
@@ -86,6 +96,8 @@ def quaternion_to_rotation(q):
     # q: (N, 4) as (w, x, y, z)
     # TODO: normalize q, then build R(q) above          -> (N, 3, 3)
 
+    q = q / q.norm(dim = -1, keepdim = True)
+
     wVals = q[:, 0]
     xVals = q[:, 1]
     yVals = q[:, 2]
@@ -123,7 +135,39 @@ def project_gaussian(mu3, Sigma3, R_wc, t, K):
     # TODO: Scam  = R_wc @ Sigma3 @ R_wc.T                       (N, 3, 3)
     #       Sig2 = J @ Scam @ J.transpose(-1, -2)                (N, 2, 2)
 
+    temp = mu_cam @ K.T
+    mu2 = temp[:, :2] / temp[:, 2:3]
+
+    fx = K[0, 0]
+    fy = K[1, 1]
+    xc = mu_cam[:, 0]
+    yc = mu_cam[:, 1]
+    zc = mu_cam[:, 2]
+
     
+    J = torch.stack([torch.stack([fx / zc, torch.zeros_like(zc), -fx*xc/torch.pow(zc, 2)], -1),
+                     torch.stack([torch.zeros_like(zc), fy / zc, -fy*yc/torch.pow(zc, 2)], -1)], -2)
+
+    Scam = R_wc @ Sigma3 @ R_wc.T
+    Sig2 = J @ Scam @ J.transpose(-1, -2)
+
     depth = mu_cam[:, 2]
     return mu2, Sig2, depth
+
+def random_choice(train_cameras, dev):
+    Kval = torch.tensor(train_cameras['K'], device=dev)
+    H = train_cameras['height']
+    W = train_cameras['width']
+
+
+    choices = train_cameras['frames']
+
+    cam = random.choice(choices)
+
+    image = image_to_tensor("data/spheres/" + cam['file'])
+    Rval = torch.tensor(cam['R_wc'], device=dev)
+    tval = torch.tensor(cam['t'], device=dev)
+
+    return Camera(H=H, W=W, image=image, R=Rval, t=tval, K=Kval)
+
 
