@@ -170,4 +170,20 @@ def random_choice(train_cameras, dev):
 
     return Camera(H=H, W=W, image=image, R=Rval, t=tval, K=Kval)
 
+def manual_choice(train_cameras, dev, do_validate, index):
+    Kval = torch.tensor(train_cameras['K'], device=dev)
+    H = train_cameras['height']
+    W = train_cameras['width']
+
+    if not do_validate:
+        cam = train_cameras['frames'][index]
+    else:
+        cam = train_cameras['val_frames'][index]
+
+    image = image_to_tensor("data/spheres/" + cam['file'])
+    Rval = torch.tensor(cam['R_wc'], device=dev)
+    tval = torch.tensor(cam['t'], device=dev)
+
+    return Camera(H=H, W=W, image=image, R=Rval, t=tval, K=Kval)
+
 

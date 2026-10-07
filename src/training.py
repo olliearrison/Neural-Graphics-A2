@@ -141,16 +141,13 @@ def train(N, H, W, target, budget, do_densify = True):
     grad_sum = torch.zeros(N, device=dev)
     grad_steps = 0
     densify_every = 200
-    finalImg = None
     # currently taking sec per step with 1024 gaussians
     for step in range(2000):
         start_time = time.perf_counter()
         Sigma = covariance_2d(log_s.clamp(max=math.log(max(H, W) / 8)).exp(), theta)
         # print("got sigma")
         img   = render(mu, Sigma, color.sigmoid(), op_raw.sigmoid(), order, H, W, tile=8, k_sigma=3)
-        if (step % 100 == 0): print(step, "K", render.K, "MPS mem %.1f GB" % (torch.mps.driver_allocated_memory() / 1e9))
         # print("got image")
-        finalImg = img
         loss  = ((img - target) ** 2).mean()
         # print("got loss")
         opt.zero_grad(set_to_none=True)
@@ -178,14 +175,24 @@ def train(N, H, W, target, budget, do_densify = True):
             order = torch.arange(mu.shape[0], device=dev)
             grad_sum = torch.zeros(mu.shape[0], device=dev)
             grad_steps = 0
-        # psnr = -10 * torch.log10(loss)
-        torch.mps.synchronize()
+        psnr = -10 * torch.log10(loss)
+
+        if (step % 100 == 0): print("PSNR", psnr.item(), "step:", step, "K", render.K, "MPS mem %.1f GB" % (torch.mps.driver_allocated_memory() / 1e9))
+                
+        # torch.mps.synchronize()
         end_time = time.perf_counter()
 
         #print(f"Step spent {end_time - start_time} seconds!")
-        
 
-    save_image(finalImg, f"results/final-coffee-{N}.png")
+    with torch.no_grad():
+        Sigma = covariance_2d(log_s.clamp(max=math.log(max(H, W) / 8)).exp(), theta)
+                # print("got sigma")
+        img   = render(mu, Sigma, color.sigmoid(), op_raw.sigmoid(), order, H, W, tile=8, k_sigma=3)
+        loss = ((img - target) ** 2).mean()
+        final_PSNR = -10 * torch.log10(loss)
+
+    save_image(img, f"results/final-coffee-{N}.png")
+    print(f"Final PSNR: {final_PSNR}")
 
 def train3d(N, train_cameras, iters, dev, budget, do_densify=True):
     # parameters (leaf tensors, requires_grad=True); example init for this scene:
@@ -198,19 +205,15 @@ def train3d(N, train_cameras, iters, dev, budget, do_densify=True):
     grad_sum = torch.zeros(N, device=dev)
     grad_steps = 0
     densify_every = 200
-    finalImg = None
 
     for step in range(iters):                        # e.g. N = 4000 Gaussians, iters = 1500
         cam = random_choice(train_cameras, dev)
         img = render3d(mu3, log_s, quat, color, op_raw, cam)
 
-        finalImg = img
         loss  = ((img - cam.image) ** 2).mean()
         opt.zero_grad(set_to_none=True)
         loss.backward()
 
-        if step % 100 == 0:
-            print(step, "K", render.K, loss)
 
         with torch.no_grad():
             grad_sum.add_(mu3.grad.norm(dim=-1))
@@ -239,4 +242,17 @@ def train3d(N, train_cameras, iters, dev, budget, do_densify=True):
             grad_sum = torch.zeros(mu3.shape[0], device=dev)
             grad_steps = 0
 
-    save_image(finalImg, f"results/final-spheres-{budget}-{N}-{iters}.png")
+        psnr = -10 * torch.log10(loss)
+        if step % 100 == 0:
+            print(step, "K", render.K, "PSNR:", psnr.item())
+
+
+    with torch.no_grad():
+        cam = manual_choice(train_cameras, dev, do_validate=True, index=4)
+        img = render3d(mu3, log_s, quat, color, op_raw, cam)
+        targetImg = cam.image
+        loss = ((img - targetImg) ** 2).mean()
+        final_PSNR = -10 * torch.log10(loss)
+        
+    save_image(img, f"results/final-spheres-{budget}-{N}-{iters}.png")
+    print(f"Final PSNR: {final_PSNR}")

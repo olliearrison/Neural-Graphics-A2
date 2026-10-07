@@ -12,7 +12,7 @@ def main():
 
     # targetImg.to(device=get_device())
 
-    # train(N=4096, H=H, W=W, target=targetImg)
+    # train(N=4096, H=H, W=W, target=targetImg, budget=0, do_densify=False)
 
 
     camera_json = json.load(open("data/spheres/cameras.json"))
@@ -23,7 +23,7 @@ def main():
         iters=2000,
         dev=get_device(),
         budget=4096,
-        do_densify=True
+        do_densify=False
     )
 
 
