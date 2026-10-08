@@ -175,10 +175,10 @@ def manual_choice(train_cameras, dev, do_validate, index):
     H = train_cameras['height']
     W = train_cameras['width']
 
-    if not do_validate:
-        cam = train_cameras['frames'][index]
-    else:
+    if do_validate: # doing validation
         cam = train_cameras['val_frames'][index]
+    else: # doing training
+        cam = train_cameras['frames'][index]
 
     image = image_to_tensor("data/spheres/" + cam['file'])
     Rval = torch.tensor(cam['R_wc'], device=dev)

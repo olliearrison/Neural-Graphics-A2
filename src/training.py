@@ -191,10 +191,10 @@ def train(N, H, W, target, budget, do_densify = True):
         loss = ((img - target) ** 2).mean()
         final_PSNR = -10 * torch.log10(loss)
 
-    save_image(img, f"results/final-coffee-{N}.png")
+    save_image(img, f"results/final-cat-{N}.png")
     print(f"Final PSNR: {final_PSNR}")
 
-def train3d(N, train_cameras, iters, dev, budget, do_densify=True):
+def train3d(N, train_cameras, iters, dev, budget, do_densify=True, do_validate=False, index=0):
     # parameters (leaf tensors, requires_grad=True); example init for this scene:
     mu3    = ((torch.rand(N, 3, device=dev) * 2 - 1) * 1.5).requires_grad_()     # (N, 3)  cloud in ~[-1.5, 1.5]^3
     log_s  = torch.log(0.08 * torch.ones(N, 3, device=dev)).requires_grad_()   # (N, 3)  small 3D blobs
@@ -248,11 +248,25 @@ def train3d(N, train_cameras, iters, dev, budget, do_densify=True):
 
 
     with torch.no_grad():
-        cam = manual_choice(train_cameras, dev, do_validate=True, index=4)
+        cam = manual_choice(train_cameras, dev, do_validate=do_validate, index=index)
+        # Kval = torch.tensor(train_cameras['K'], device=dev)
+        # Rval = torch.tensor(train_cameras['val_frames'][index]['R_wc'], device=dev)
+        # tval = torch.tensor([
+        #         0.0 + 1.0,
+        #         1.1102230246251565e-16 + 1.0,
+        #         4.0 + 1.0
+        #     ], device=dev)
+        # cam = Camera(H=160, W=160, image=None, R=Rval, t=tval, K=Kval)
         img = render3d(mu3, log_s, quat, color, op_raw, cam)
         targetImg = cam.image
         loss = ((img - targetImg) ** 2).mean()
         final_PSNR = -10 * torch.log10(loss)
-        
-    save_image(img, f"results/final-spheres-{budget}-{N}-{iters}.png")
-    print(f"Final PSNR: {final_PSNR}")
+
+    if do_validate:
+        save_image(img, f"results/final-spheres-{budget}-{N}-{iters}-validate-{index}.png")
+    else:
+        save_image(img, f"results/final-spheres-{budget}-{N}-{iters}-{index}.png")
+    # save_image(img, f"results/novel-view.png")
+    print(f"Final PSNR for index-{index}: {final_PSNR}")
+    # final_PSNR=0
+    return final_PSNR
